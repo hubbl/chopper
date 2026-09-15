@@ -3,6 +3,9 @@
 Kleiner WAV-Splitter für Musik und Geräusche: Peaks erkennen, Schnittmarker
 korrigieren, Segmente anhören und samplegenau exportieren.
 
+![Preview of how the chopper-application looks like](./images/initial.jpg)
+
+
 ## Start unter Windows
 
 Die vorhandene Python-Umgebung `.venv` wird verwendet. Doppelklick auf `start.bat`
