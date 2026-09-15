@@ -1,0 +1,295 @@
+import time
+
+import numpy as np
+import pytest
+import soundfile as sf
+from PySide6.QtCore import QMimeData, QPoint, QPointF, Qt, QUrl
+from PySide6.QtGui import QDragEnterEvent, QDropEvent, QWheelEvent
+from PySide6.QtTest import QTest
+
+from chopper.app import MainWindow
+from chopper.document import AudioDocument, Marker
+
+
+def wait_jobs(app, window):
+    deadline = time.monotonic() + 10
+    while window.controller.jobs and time.monotonic() < deadline:
+        app.processEvents()
+        QTest.qWait(10)
+    assert not window.controller.jobs
+
+
+@pytest.mark.parametrize("target", ["window", "waveform", "header"])
+def test_drop_wav_loads_and_analyzes(app, tmp_path, monkeypatch, target):
+    window = MainWindow()
+    window.show()
+    app.processEvents()
+    errors = []
+    monkeypatch.setattr(window, "show_error", errors.append)
+    path = tmp_path / "Aufnahme ä.WAV"
+    values = np.zeros(1000)
+    values[300:350] = np.hanning(50)
+    sf.write(path, values, 1000)
+    mime = QMimeData()
+    mime.setUrls([QUrl.fromLocalFile(str(path))])
+    receiver = {
+        "window": window,
+        "waveform": window.waveform.viewport(),
+        "header": window.file_label,
+    }[target]
+    enter = QDragEnterEvent(
+        QPoint(10, 10),
+        Qt.DropAction.CopyAction,
+        mime,
+        Qt.MouseButton.LeftButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    app.sendEvent(receiver, enter)
+    assert enter.isAccepted()
+    drop = QDropEvent(
+        QPointF(10, 10),
+        Qt.DropAction.CopyAction,
+        mime,
+        Qt.MouseButton.LeftButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    app.sendEvent(receiver, drop)
+    assert drop.isAccepted()
+    wait_jobs(app, window)
+    assert not errors
+    assert window.controller.document.audio.path == path
+    assert len(window.controller.document.markers) == 1
+    window.close()
+
+
+@pytest.mark.parametrize("kind", ["other", "remote", "multiple", "directory", "busy"])
+def test_invalid_or_busy_drop_is_ignored(app, tmp_path, monkeypatch, kind):
+    window = MainWindow()
+    opened = []
+    monkeypatch.setattr(window.controller, "open_path", opened.append)
+    path = tmp_path / ("audio.mp3" if kind == "other" else "audio.wave")
+    if kind == "directory":
+        path.mkdir()
+    else:
+        path.touch()
+    urls = [QUrl.fromLocalFile(str(path))]
+    if kind == "remote":
+        urls = [QUrl("https://example.com/audio.wav")]
+    elif kind == "multiple":
+        urls *= 2
+    elif kind == "busy":
+        window.open_action.setEnabled(False)
+    mime = QMimeData()
+    mime.setUrls(urls)
+    enter = QDragEnterEvent(
+        QPoint(10, 10),
+        Qt.DropAction.CopyAction,
+        mime,
+        Qt.MouseButton.LeftButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    window.dragEnterEvent(enter)
+    assert not enter.isAccepted()
+    drop = QDropEvent(
+        QPointF(10, 10),
+        Qt.DropAction.CopyAction,
+        mime,
+        Qt.MouseButton.LeftButton,
+        Qt.KeyboardModifier.NoModifier,
+    )
+    window.dropEvent(drop)
+    assert not drop.isAccepted()
+    assert not opened
+    window.close()
+
+
+def test_background_open_analysis_and_export(app, tmp_path, monkeypatch):
+    window = MainWindow()
+    window.show()
+    errors = []
+    monkeypatch.setattr(window, "show_error", errors.append)
+    monkeypatch.setattr("chopper.app.QMessageBox.information", lambda *args: None)
+    values = np.zeros((1000, 2))
+    values[300:350, 0] = np.hanning(50)
+    values[:, 1] = -values[:, 0]
+    path = tmp_path / "source.wav"
+    sf.write(path, values, 1000, subtype="PCM_24")
+    window.controller.open_path(path)
+    wait_jobs(app, window)
+    assert not errors
+    assert window.controller.document is not None
+    assert len(window.controller.document.markers) == 1
+    assert window.export_button.isEnabled()
+    destination = tmp_path / "output"
+    destination.mkdir()
+    window.controller.export_to(destination)
+    wait_jobs(app, window)
+    assert not errors
+    assert len(list(destination.glob("*.wav"))) == 2
+    window.close()
+
+
+def test_mouse_add_remove_drag_and_undo(app, audio):
+    window = MainWindow()
+    window.show()
+    controller = window.controller
+    controller.document = AudioDocument(audio)
+    controller.player.set_audio(audio)
+    view = window.waveform
+    view.set_document(controller.document)
+    controller.document.markers_changed.connect(controller.markers_changed)
+    window.update_actions()
+    app.processEvents()
+    viewport = view.viewport()
+
+    def point(sample):
+        return view.mapFromScene(QPointF(sample, 0.5))
+
+    QTest.mouseDClick(viewport, Qt.MouseButton.LeftButton, pos=point(300))
+    app.processEvents()
+    assert len(controller.document.markers) == 1
+    marker = controller.document.markers[0]
+    before = marker.sample
+    QTest.mousePress(viewport, Qt.MouseButton.LeftButton, pos=point(before))
+    QTest.mouseMove(viewport, point(400))
+    QTest.mouseRelease(viewport, Qt.MouseButton.LeftButton, pos=point(400))
+    app.processEvents()
+    assert abs(controller.document.markers[0].sample - 400) <= 2
+    assert controller.undo.count() == 2
+    controller.undo.undo()
+    assert controller.document.markers[0].sample == before
+    controller.undo.redo()
+    QTest.mouseDClick(
+        viewport, Qt.MouseButton.LeftButton, pos=point(controller.document.markers[0].sample)
+    )
+    assert not controller.document.markers
+    controller.undo.undo()
+    assert len(controller.document.markers) == 1
+    window.close()
+
+
+def test_open_guesses_threshold_but_reanalysis_preserves_manual_value(app, tmp_path, monkeypatch):
+    window = MainWindow()
+    errors = []
+    monkeypatch.setattr(window, "show_error", errors.append)
+    values = np.zeros(30000)
+    values[np.arange(100, 19101, 1000)] = np.linspace(0.001, 0.03, 20)
+    path = tmp_path / "quiet.wav"
+    sf.write(path, values, 1000, subtype="FLOAT")
+    window.controller.open_path(path)
+    wait_jobs(app, window)
+    assert not errors
+    assert len(window.controller.document.markers) == 10
+    threshold = window.parameter_widgets["threshold_db"]
+    assert threshold.value() < -24
+    threshold.setValue(-24)
+    window.analyze_button.click()
+    wait_jobs(app, window)
+    assert threshold.value() == -24
+    assert not window.controller.document.markers
+    window.controller.open_path(path)
+    wait_jobs(app, window)
+    assert not errors
+    assert threshold.value() < -24
+    assert len(window.controller.document.markers) == 10
+    window.close()
+
+
+def test_failed_open_keeps_previous_document(app, audio, tmp_path, monkeypatch):
+    window = MainWindow()
+    controller = window.controller
+    controller.document = AudioDocument(audio)
+    original = controller.document
+    errors = []
+    monkeypatch.setattr(window, "show_error", errors.append)
+    controller.open_path(tmp_path / "missing.wav")
+    wait_jobs(app, window)
+    assert errors
+    assert controller.document is original
+    window.close()
+
+
+def test_detection_does_not_overwrite_concurrent_edits(app, audio):
+    window = MainWindow()
+    controller = window.controller
+    controller.document = AudioDocument(audio)
+    controller.player.set_audio(audio)
+    window.waveform.set_document(controller.document)
+    controller.analyze()
+    controller.document.set_markers([Marker(100)])
+    wait_jobs(app, window)
+    assert [m.sample for m in controller.document.markers] == [100]
+    assert "während" in window.statusBar().currentMessage()
+    window.close()
+
+
+def test_zoom_preserves_marker_sample_and_pixel_hit_tolerance(app, audio):
+    window = MainWindow()
+    window.show()
+    doc = AudioDocument(audio)
+    marker = Marker(500)
+    doc.set_markers([marker])
+    view = window.waveform
+    view.set_document(doc)
+    app.processEvents()
+    point = view.mapFromScene(QPointF(500, 0.5))
+    scale_before = view.transform().m11()
+    event = QWheelEvent(
+        QPointF(point),
+        QPointF(view.viewport().mapToGlobal(point)),
+        QPoint(),
+        QPoint(0, 240),
+        Qt.MouseButton.NoButton,
+        Qt.KeyboardModifier.ControlModifier,
+        Qt.ScrollPhase.NoScrollPhase,
+        False,
+    )
+    app.sendEvent(view.viewport(), event)
+    assert view.transform().m11() > scale_before
+    assert doc.markers == (marker,)
+    zoomed_point = view.mapFromScene(QPointF(500, 0.5))
+    assert abs(zoomed_point.x() - point.x()) <= 2
+    assert view.marker_at(zoomed_point + QPoint(6, 0)) == marker
+    assert view.marker_at(zoomed_point + QPoint(8, 0)) is None
+    view.fit_all()
+    assert doc.markers == (marker,)
+    window.close()
+
+
+def test_latest_open_wins(app, tmp_path, monkeypatch):
+    window = MainWindow()
+    errors = []
+    monkeypatch.setattr(window, "show_error", errors.append)
+    for name in ("first.wav", "second.wav"):
+        sf.write(tmp_path / name, np.zeros(1000), 1000)
+    window.controller.open_path(tmp_path / "first.wav")
+    window.controller.open_path(tmp_path / "second.wav")
+    wait_jobs(app, window)
+    assert not errors
+    assert window.controller.document.audio.path.name == "second.wav"
+    window.close()
+
+
+def test_registry_drives_algorithm_fields(app):
+    from chopper.detectors import REGISTRY, DetectorSpec, Parameter, register
+
+    class AnotherDetector:
+        def detect(self, samples, samplerate, parameters):
+            return []
+
+    register(
+        DetectorSpec(
+            "gui-test",
+            "Anderer Algorithmus",
+            AnotherDetector(),
+            (Parameter("sensitivity", "Empfindlichkeit", 7, 0, 10, 1),),
+        )
+    )
+    try:
+        window = MainWindow()
+        window.algorithm.setCurrentIndex(window.algorithm.findData("gui-test"))
+        assert list(window.parameter_widgets) == ["sensitivity"]
+        assert window.parameter_widgets["sensitivity"].value() == 7
+        window.close()
+    finally:
+        REGISTRY.pop("gui-test")

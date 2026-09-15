@@ -1,0 +1,71 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chopper-wav"
+version = "0.1.0"
+description = "Samplegenauer WAV-Splitter mit modularer Peak-Erkennung"
+requires-python = ">=3.11"
+dependencies = ["PySide6>=6.8,<7", "numpy>=2.1,<3", "soundfile>=0.13,<1", "sounddevice>=0.5,<1"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10", "mypy>=2.3,<3", "ruff>=0.16.7,<0.17"]
+
+[project.gui-scripts]
+chopper = "chopper.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["chopper*"]
+
+[tool.setuptools.package-data]
+chopper = ["assets/*.ico"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Full test runs do not need a persistent cache shared across Windows users.
+addopts = "-p no:cacheprovider"
+
+
+[tool.ruff]
+# Keep lint suggestions and formatting compatible with the minimum Python version.
+target-version = "py311"
+# Preferred formatter width; this does not enable the E501 line-length lint rule.
+line-length = 100
+
+[tool.ruff.lint]
+# Prefixes enable rule groups; a complete code selects one rule.
+# Rule reference: https://docs.astral.sh/ruff/rules/
+select = [
+    "E4",   # pycodestyle: import placement and multiple imports on one line.
+    "E7",   # pycodestyle: statement style, comparisons, bare except, ambiguous names.
+    "E9",   # pycodestyle: runtime-related errors, e.g. using break outside a loop.
+    "F",    # Pyflakes: unused imports/variables, undefined names, and other code errors.
+    "I",    # isort: sort and group imports consistently.
+    "UP",   # pyupgrade: replace outdated syntax/APIs with Python 3.11-compatible forms.
+    "ANN",  # flake8-annotations: require parameter/return types and reject explicit Any.
+    "C901", # McCabe: flag functions exceeding max-complexity below.
+]
+
+[tool.ruff.lint.mccabe]
+# Limit independent control-flow paths per function (decision points + 1).
+# This measures branching complexity, not method length or nesting depth directly.
+max-complexity = 8
+
+[tool.ruff.lint.per-file-ignores]
+# ANN401 rejects explicit Any; allow it for heterogeneous Qt worker results here.
+"chopper/app.py" = ["ANN401"]
+# Test functions and fixtures may omit type annotations; other lint rules still apply.
+"tests/**" = ["ANN"]
+
+[tool.mypy]
+# Use the active Python version to match the installed dependency stubs.
+files = ["chopper"]
+disallow_untyped_defs = true
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = ["soundfile", "sounddevice"]
+ignore_missing_imports = true
