@@ -11,6 +11,7 @@ import sounddevice as sd
 from numpy.typing import NDArray
 
 from .audio import AudioData
+from .i18n import tr
 
 
 class OutputStream(Protocol):
@@ -109,7 +110,7 @@ class AudioPlayer:
         assert self.audio is not None
         outdata.fill(0)
         if status:
-            self.warning = "Audioausgabe konnte zeitweise nicht folgen (Aussetzer)."
+            self.warning = tr("error.audio_dropout")
         if self._dac_origin is None:
             self._dac_origin = time.outputBufferDacTime
         count = min(frames, self.end - self._cursor)
@@ -124,7 +125,7 @@ class AudioPlayer:
 
     def play_range(self, start: int, end: int) -> None:
         if self.audio is None or not 0 <= start < end <= self.audio.frames:
-            raise ValueError("Ungültiger Wiedergabebereich.")
+            raise ValueError(tr("error.playback_range"))
         self._dispose()
         self.start, self.end = int(start), int(end)
         self._position = self.start

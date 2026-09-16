@@ -103,7 +103,7 @@ def test_invalid_settings(parameters):
 
 @pytest.mark.parametrize("samplerate", [0, -1000])
 def test_invalid_samplerate_even_for_empty_audio(samplerate):
-    with pytest.raises(ValueError, match="Samplera"):
+    with pytest.raises(ValueError, match="sample rate"):
         SimplePeakCutDetector().detect(np.zeros(0), samplerate, {})
 
 
@@ -159,5 +159,5 @@ def test_guess_without_peaks_has_safe_default(frames):
 
 
 def test_guess_validates_samplerate():
-    with pytest.raises(ValueError, match="Samplera"):
+    with pytest.raises(ValueError, match="sample rate"):
         SimplePeakCutDetector().guess_threshold(np.zeros(0), 0, {})

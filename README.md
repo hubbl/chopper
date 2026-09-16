@@ -167,4 +167,32 @@ Der persistente pytest-Cache ist deaktiviert, damit Prüfläufe nicht auf einen
 unter einem anderen Windows-Benutzer angelegten Cache zugreifen. Alle Tests
 laufen weiterhin; Cache-Funktionen wie `--last-failed` stehen nicht zur Verfügung.
 
+## Sprache und Übersetzungen
+
+Das Programm startet standardmäßig auf Englisch, unabhängig von der Systemsprache.
+Alle Anwendungstexte stehen in `chopper/locales/en.json`; die deutsche Übersetzung
+steht in `chopper/locales/de.json`. Der Code verwendet stabile Schlüssel wie
+`tr("action.open")`. Dynamische Werte werden über benannte Platzhalter wie
+`{count}` eingesetzt. Dateinamen und technische Kennungen bleiben unverändert.
+
+Zum Start auf Deutsch in PowerShell:
+
+```powershell
+$env:CHOPPER_LANGUAGE = "de"
+.venv\Scripts\python.exe -m chopper
+```
+
+Mit `CHOPPER_LANGUAGE=en` wird wieder Englisch verwendet. Die Sprache wird beim
+Start gewählt; ein Wechsel erfordert einen Neustart. Regionale Codes wie `de-DE`
+werden auf die Basissprache abgebildet. Unbekannte Sprachen und fehlende Einträge
+fallen auf Englisch zurück.
+
+Für weitere Sprachen `en.json` als `<sprachcode>.json` kopieren und die Werte
+übersetzen. Schlüssel und benannte Platzhalter müssen erhalten bleiben.
+Die Sprachdateien werden im installierten Paket mitgeliefert. Auch Detektornamen,
+Parameterbeschriftungen und Einheiten können Übersetzungsschlüssel verwenden.
+Die Tests prüfen die bestehenden Sprachdateien und die Oberfläche in Englisch
+und Deutsch. Qt-Standardtexte verwenden, sofern verfügbar, die mit Qt gelieferten
+Übersetzungen; Betriebssystem- und Bibliotheksfehler können eigene Texte liefern.
+
 Das vollständige Konzept steht in [CONCEPT.md](CONCEPT.md).

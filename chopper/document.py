@@ -11,6 +11,7 @@ from PySide6.QtCore import QObject, Signal
 from PySide6.QtGui import QUndoCommand
 
 from .audio import AudioData
+from .i18n import tr
 
 
 @dataclass(frozen=True)
@@ -36,11 +37,11 @@ class AudioDocument(QObject):
     def set_markers(self, markers: Iterable[Marker]) -> None:
         ordered = tuple(sorted(markers, key=lambda m: m.sample))
         if any(type(m.sample) is not int or not 0 < m.sample < self.audio.frames for m in ordered):
-            raise ValueError("Marker müssen innerhalb der Aufnahme liegen.")
+            raise ValueError(tr("error.marker_bounds"))
         if len({m.sample for m in ordered}) != len(ordered) or len({m.id for m in ordered}) != len(
             ordered
         ):
-            raise ValueError("Doppelte Marker sind nicht erlaubt.")
+            raise ValueError(tr("error.duplicate_markers"))
         if ordered != self._markers:
             self._markers = ordered
             self.revision += 1

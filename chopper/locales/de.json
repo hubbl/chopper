@@ -1,0 +1,101 @@
+{
+  "action.export": "Segmente exportieren …",
+  "action.open": "WAV öffnen …",
+  "action.quit": "Beenden",
+  "action.redo": "Wiederholen",
+  "action.undo": "Rückgängig",
+
+  "app.brand": "CHOPPER",
+  "app.file_title": "{filename} — Chopper",
+  "app.name": "Chopper",
+  "app.title": "Chopper — WAV-Splitter",
+
+  "audio.metadata": "{duration}  ·  {samplerate:,} Hz  ·  Kanäle: {channels}  ·  {subtype}",
+
+  "command.add_marker": "Marker hinzufügen",
+  "command.detect": "Automatische Erkennung",
+  "command.move_marker": "Marker verschieben",
+  "command.remove_marker": "Marker entfernen",
+
+  "detector.analyze": "Neu analysieren",
+  "detector.hint": "Manuelle Marker bleiben erhalten.\nJede Analyse lässt sich rückgängig machen.",
+  "detector.peaks.name": "Simple Peak Cut",
+  "detector.title": "Schnittpunkte erkennen",
+
+  "dialog.export": "Zielordner für WAV-Segmente wählen",
+  "dialog.open": "WAV öffnen",
+  "dialog.wav_filter": "WAV-Dateien (*.wav *.wave);;Alle Dateien (*)",
+
+  "empty.instructions": "WAV ins Fenster ziehen oder öffnen → Peaks erkennen → Marker korrigieren → Exportieren",
+  "empty.title": "Eine Aufnahme. Präzise Schnitte.",
+  "empty.waveform": "WAV öffnen, um Schnittpunkte zu bearbeiten\nStrg+O",
+
+  "error.audio_dropout": "Audioausgabe konnte zeitweise nicht folgen (Aussetzer).",
+  "error.detector_registered": "Algorithmus bereits registriert: {id}",
+  "error.duplicate_markers": "Doppelte Marker sind nicht erlaubt.",
+  "error.export": "Export fehlgeschlagen: {error}{cleanup}",
+  "error.export_cleanup": "\nUnvollständige Datei konnte nicht entfernt werden: {path}",
+  "error.export_collisions": "Dateien existieren bereits. Bitte einen anderen Ordner wählen:\n{files}",
+  "error.export_directory": "Der Zielordner existiert nicht.",
+  "error.lookback": "Die Rückwärtssuche muss mindestens so lang sein wie der Vorlauf.",
+  "error.marker_bounds": "Marker müssen innerhalb der Aufnahme liegen.",
+  "error.parameter": "Ungültiger Parameter: {label}",
+  "error.playback": "Wiedergabe nicht möglich:\n{error}",
+  "error.playback_device": "Wiedergabe nicht möglich. Bitte Audioausgabegerät prüfen.\n\n{error}",
+  "error.playback_range": "Ungültiger Wiedergabebereich.",
+  "error.samplerate": "Ungültige Samplerate.",
+  "error.segment_bounds": "Ungültige Segmentgrenzen.",
+  "error.wav_empty": "Die WAV-Datei enthält keine Samples.",
+  "error.wav_format": "Bitte eine unkomprimierte PCM- oder Float-WAV-Datei öffnen.",
+  "error.wav_samples": "Die WAV-Datei enthält ungültige Samplewerte (NaN/Inf).",
+
+  "export.complete": "Exportierte WAV-Dateien: {count}.\n\n{directory}",
+  "export.complete_title": "Export abgeschlossen",
+  "export.partial": "\n\nBereits exportiert:\n{paths}",
+
+  "help.shortcuts": "Doppelklick: Marker setzen/entfernen  ·  Ziehen: verschieben  ·  Strg+Mausrad: Zoom  ·  Leertaste: Play/Pause",
+
+  "legend.markers": "<font color='#ffbd69'>● Automatisch</font>   <font color='#c3a3ff'>● Manuell</font>",
+
+  "marker.automatic": "Automatisch",
+  "marker.manual": "Manuell",
+  "marker.tooltip": "{kind} · {time} · Sample {sample}",
+
+  "menu.edit": "Bearbeiten",
+  "menu.file": "Datei",
+
+  "parameter.distance": "Peak-Mindestabstand",
+  "parameter.lead": "Mindestvorlauf",
+  "parameter.level": "Zielpegel relativ zum Peak",
+  "parameter.lookback": "Max. Rückwärtssuche",
+  "parameter.smoothing": "Hüllkurven-Glättung",
+  "parameter.threshold": "Peak-Schwelle",
+
+  "playback.pause": "Pause",
+  "playback.play": "Abspielen",
+  "playback.stop": "Stop",
+  "playback.toggle": "Abspielen / Pause",
+
+  "selection.all": "Gesamte Aufnahme",
+  "selection.counts": "Marker: {markers}  ·  Segmente: {segments}",
+  "selection.empty": "Keine Aufnahme geladen",
+  "selection.segment": "Segment {number}  ·  {start} – {end}",
+
+  "status.analysis_complete": "Analyse abgeschlossen. Schnittvorschläge: {count}.",
+  "status.detecting": "Schnittpunkte werden erkannt …",
+  "status.exported": "Segmente exportiert: {count}. Ziel: {directory}",
+  "status.exporting": "Segmente werden exportiert: {count} …",
+  "status.failed": "Vorgang fehlgeschlagen",
+  "status.loading": "WAV wird geladen …",
+  "status.markers_changed": "Marker wurden während der Analyse geändert. Bitte erneut analysieren.",
+  "status.ready": "Bereit",
+  "status.wait_to_close": "Bitte den laufenden Vorgang abwarten und anschließend erneut schließen.",
+
+  "unit.dbfs": " dBFS",
+  "unit.ms": " ms",
+  "unit.percent": " %",
+
+  "zoom.fit": "Alles anzeigen",
+  "zoom.in": "Zoom +",
+  "zoom.out": "Zoom -"
+}

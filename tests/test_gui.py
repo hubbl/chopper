@@ -219,7 +219,7 @@ def test_detection_does_not_overwrite_concurrent_edits(app, audio):
     controller.document.set_markers([Marker(100)])
     wait_jobs(app, window)
     assert [m.sample for m in controller.document.markers] == [100]
-    assert "während" in window.statusBar().currentMessage()
+    assert "during analysis" in window.statusBar().currentMessage()
     window.close()
 
 

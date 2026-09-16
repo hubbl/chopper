@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
 
 from .audio import AudioData
 from .document import AudioDocument, Marker
+from .i18n import tr
 
 
 def format_time(sample: float, samplerate: int) -> str:
@@ -353,10 +354,12 @@ class WaveformView(QGraphicsView):
             marker = self.marker_at(point)
             self.setCursor(Qt.CursorShape.SizeHorCursor if marker else Qt.CursorShape.CrossCursor)
             self.setToolTip(
-                ("Automatisch" if marker.automatic else "Manuell")
-                + " · "
-                + format_time(marker.sample, self.document.audio.samplerate)
-                + f" · Sample {marker.sample}"
+                tr(
+                    "marker.tooltip",
+                    kind=tr("marker.automatic" if marker.automatic else "marker.manual"),
+                    time=format_time(marker.sample, self.document.audio.samplerate),
+                    sample=marker.sample,
+                )
                 if marker
                 else ""
             )
@@ -405,7 +408,7 @@ class WaveformView(QGraphicsView):
         painter.drawText(
             QRectF(0, 0, width, height),
             Qt.AlignmentFlag.AlignCenter,
-            "WAV öffnen, um Schnittpunkte zu bearbeiten\nStrg+O",
+            tr("empty.waveform"),
         )
 
     def _draw_selected_segment(self, painter: QPainter, height: int) -> None:

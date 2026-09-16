@@ -10,6 +10,8 @@ from typing import Protocol
 import numpy as np
 from numpy.typing import NDArray
 
+from .i18n import tr
+
 
 class Detector(Protocol):
     def detect(
@@ -44,7 +46,7 @@ REGISTRY: dict[str, DetectorSpec] = {}
 
 def register(spec: DetectorSpec) -> None:
     if spec.id in REGISTRY:
-        raise ValueError(f"Algorithmus bereits registriert: {spec.id}")
+        raise ValueError(tr("error.detector_registered", id=spec.id))
     REGISTRY[spec.id] = spec
 
 
@@ -61,7 +63,7 @@ class SimplePeakCutDetector:
         """
         settings = self._validated_parameters(parameters)
         if samplerate <= 0:
-            raise ValueError("Ungültige Samplerate.")
+            raise ValueError(tr("error.samplerate"))
         if len(samples) < 3:
             return REGISTRY["peaks"].defaults()["threshold_db"]
 
@@ -93,7 +95,7 @@ class SimplePeakCutDetector:
     ) -> list[int]:
         settings = self._validated_parameters(parameters)
         if samplerate <= 0:
-            raise ValueError("Ungültige Samplerate.")
+            raise ValueError(tr("error.samplerate"))
         if len(samples) < 3:
             return []
         env = self._envelope(samples, samplerate, settings["smoothing_ms"])
@@ -131,9 +133,9 @@ class SimplePeakCutDetector:
         for parameter in spec.parameters:
             value = settings[parameter.key]
             if not np.isfinite(value) or not parameter.minimum <= value <= parameter.maximum:
-                raise ValueError(f"Ungültiger Parameter: {parameter.label}")
+                raise ValueError(tr("error.parameter", label=tr(parameter.label)))
         if settings["lookback_ms"] < settings["lead_ms"]:
-            raise ValueError("Die Rückwärtssuche muss mindestens so lang sein wie der Vorlauf.")
+            raise ValueError(tr("error.lookback"))
         return settings
 
     def _find_peak_candidates(
@@ -220,15 +222,15 @@ class SimplePeakCutDetector:
 register(
     DetectorSpec(
         "peaks",
-        "Simple Peak Cut",
+        "detector.peaks.name",
         SimplePeakCutDetector(),
         (
-            Parameter("threshold_db", "Peak-Schwelle", -24, -96, 0, 1, " dBFS"),
-            Parameter("distance_ms", "Peak-Mindestabstand", 100, 1, 10000, 10, " ms"),
-            Parameter("lead_ms", "Mindestvorlauf", 10, 0, 1000, 1, " ms"),
-            Parameter("level_percent", "Zielpegel relativ zum Peak", 1, 0, 100, 1, " %"),
-            Parameter("lookback_ms", "Max. Rückwärtssuche", 500, 1, 10000, 10, " ms"),
-            Parameter("smoothing_ms", "Hüllkurven-Glättung", 1, 0, 100, 0.1, " ms"),
+            Parameter("threshold_db", "parameter.threshold", -24, -96, 0, 1, "unit.dbfs"),
+            Parameter("distance_ms", "parameter.distance", 100, 1, 10000, 10, "unit.ms"),
+            Parameter("lead_ms", "parameter.lead", 10, 0, 1000, 1, "unit.ms"),
+            Parameter("level_percent", "parameter.level", 1, 0, 100, 1, "unit.percent"),
+            Parameter("lookback_ms", "parameter.lookback", 500, 1, 10000, 10, "unit.ms"),
+            Parameter("smoothing_ms", "parameter.smoothing", 1, 0, 100, 0.1, "unit.ms"),
         ),
     )
 )

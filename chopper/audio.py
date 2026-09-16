@@ -10,6 +10,8 @@ import numpy as np
 import soundfile as sf
 from numpy.typing import NDArray
 
+from .i18n import tr
+
 SUPPORTED_SUBTYPES = {"PCM_U8", "PCM_16", "PCM_24", "PCM_32", "FLOAT", "DOUBLE"}
 
 
@@ -36,13 +38,13 @@ def load_wav(path: str | Path) -> AudioData:
             source.format not in {"WAV", "WAVEX", "RF64"}
             or source.subtype not in SUPPORTED_SUBTYPES
         ):
-            raise ValueError("Bitte eine unkomprimierte PCM- oder Float-WAV-Datei öffnen.")
+            raise ValueError(tr("error.wav_format"))
         if source.frames == 0:
-            raise ValueError("Die WAV-Datei enthält keine Samples.")
+            raise ValueError(tr("error.wav_empty"))
         # float64 exactly represents every supported integer PCM sample, including PCM32.
         samples = source.read(dtype="float64", always_2d=True)
         if not np.isfinite(samples).all():
-            raise ValueError("Die WAV-Datei enthält ungültige Samplewerte (NaN/Inf).")
+            raise ValueError(tr("error.wav_samples"))
         samples.flags.writeable = False
         return AudioData(path, samples, source.samplerate, source.subtype)
 
@@ -51,7 +53,7 @@ class ExportError(Exception):
     def __init__(self, message: str, completed: Iterable[Path] = ()) -> None:
         self.completed = tuple(completed)
         details = "\n".join(str(p) for p in self.completed)
-        super().__init__(message + ("\n\nBereits exportiert:\n" + details if details else ""))
+        super().__init__(message + (tr("export.partial", paths=details) if details else ""))
 
 
 def export_segments(
@@ -60,16 +62,13 @@ def export_segments(
     directory = Path(directory)
     ranges = tuple(segments)
     if not ranges or any(not 0 <= a < b <= audio.frames for a, b in ranges):
-        raise ExportError("Ungültige Segmentgrenzen.")
+        raise ExportError(tr("error.segment_bounds"))
     if not directory.is_dir():
-        raise ExportError("Der Zielordner existiert nicht.")
+        raise ExportError(tr("error.export_directory"))
     paths = [directory / f"{audio.path.stem}_{i:03d}.wav" for i in range(1, len(ranges) + 1)]
     collisions = [p.name for p in paths if p.exists()]
     if collisions:
-        raise ExportError(
-            "Dateien existieren bereits. Bitte einen anderen Ordner wählen:\n"
-            + "\n".join(collisions)
-        )
+        raise ExportError(tr("error.export_collisions", files="\n".join(collisions)))
     completed = []
     for path, (start, end) in zip(paths, ranges):
         created = False
@@ -91,6 +90,6 @@ def export_segments(
                 try:
                     path.unlink(missing_ok=True)
                 except OSError:
-                    cleanup = f"\nUnvollständige Datei konnte nicht entfernt werden: {path}"
-            raise ExportError(f"Export fehlgeschlagen: {exc}{cleanup}", completed) from exc
+                    cleanup = tr("error.export_cleanup", path=path)
+            raise ExportError(tr("error.export", error=exc, cleanup=cleanup), completed) from exc
     return completed
