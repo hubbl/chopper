@@ -170,6 +170,7 @@ def test_mouse_add_remove_drag_and_undo(app, audio):
 
 def test_open_guesses_threshold_but_reanalysis_preserves_manual_value(app, tmp_path, monkeypatch):
     window = MainWindow()
+    window.algorithm.setCurrentIndex(window.algorithm.findData("peaks"))
     errors = []
     monkeypatch.setattr(window, "show_error", errors.append)
     values = np.zeros(30000)
@@ -293,3 +294,68 @@ def test_registry_drives_algorithm_fields(app):
         window.close()
     finally:
         REGISTRY.pop("gui-test")
+
+
+def test_four_algorithms_keep_independent_values_without_analysis(app):
+    from chopper.detectors import REGISTRY
+
+    window = MainWindow()
+    try:
+        assert window.algorithm.count() == 4
+        assert window.algorithm.currentData() == "envelope_hysteresis"
+        for spec in REGISTRY.values():
+            window.algorithm.setCurrentIndex(window.algorithm.findData(spec.id))
+            assert set(window.parameter_widgets) == {p.key for p in spec.parameters}
+            window.parameter_widgets["lead_ms"].setValue(23)
+        for spec in REGISTRY.values():
+            window.algorithm.setCurrentIndex(window.algorithm.findData(spec.id))
+            assert window.parameter_widgets["lead_ms"].value() == 23
+        window.parameter_widgets["lead_ms"].setValue(77)
+        window.algorithm.setCurrentIndex(window.algorithm.findData("envelope_hysteresis"))
+        assert window.parameter_widgets["lead_ms"].value() == 23
+        assert not window.controller.jobs
+    finally:
+        window.close()
+
+
+@pytest.mark.parametrize(
+    "detector_id", ["envelope_threshold", "envelope_hysteresis", "envelope_attack"]
+)
+def test_new_analysis_preserves_manual_markers_and_supports_undo(
+    app, tmp_path, monkeypatch, detector_id
+):
+    window = MainWindow()
+    errors = []
+    monkeypatch.setattr(window, "show_error", errors.append)
+    window.algorithm.setCurrentIndex(window.algorithm.findData(detector_id))
+    values = np.zeros(1000)
+    values[200:300] = 0.5
+    values[600:700] = 0.8
+    path = tmp_path / "bursts.wav"
+    sf.write(path, values, 1000, subtype="FLOAT")
+    before_parameters = {key: widget.value() for key, widget in window.parameter_widgets.items()}
+    window.controller.open_path(path)
+    wait_jobs(app, window)
+    assert not errors
+    assert before_parameters == {
+        key: widget.value() for key, widget in window.parameter_widgets.items()
+    }
+    doc = window.controller.document
+    assert len(doc.markers) == 2
+    window.controller.add_marker(400)
+    before = doc.markers
+    window.parameter_widgets["lead_ms"].setValue(60)
+    window.analyze_button.click()
+    wait_jobs(app, window)
+    assert not errors
+    assert len(doc.markers) == 3
+    assert [m for m in doc.markers if not m.automatic] == [m for m in before if not m.automatic]
+    assert [m.sample for m in doc.markers if m.automatic] != [
+        m.sample for m in before if m.automatic
+    ]
+    after = doc.markers
+    window.controller.undo.undo()
+    assert doc.markers == before
+    window.controller.undo.redo()
+    assert doc.markers == after
+    window.close()

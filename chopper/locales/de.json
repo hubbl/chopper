@@ -4,32 +4,25 @@
   "action.quit": "Beenden",
   "action.redo": "Wiederholen",
   "action.undo": "Rückgängig",
-
   "app.brand": "CHOPPER",
   "app.file_title": "{filename} — Chopper",
   "app.name": "Chopper",
   "app.title": "Chopper — WAV-Splitter",
-
   "audio.metadata": "{duration}  ·  {samplerate:,} Hz  ·  Kanäle: {channels}  ·  {subtype}",
-
   "command.add_marker": "Marker hinzufügen",
   "command.detect": "Automatische Erkennung",
   "command.move_marker": "Marker verschieben",
   "command.remove_marker": "Marker entfernen",
-
   "detector.analyze": "Neu analysieren",
   "detector.hint": "Manuelle Marker bleiben erhalten.\nJede Analyse lässt sich rückgängig machen.",
   "detector.peaks.name": "Simple Peak Cut",
   "detector.title": "Schnittpunkte erkennen",
-
   "dialog.export": "Zielordner für WAV-Segmente wählen",
   "dialog.open": "WAV öffnen",
   "dialog.wav_filter": "WAV-Dateien (*.wav *.wave);;Alle Dateien (*)",
-
-  "empty.instructions": "WAV ins Fenster ziehen oder öffnen → Peaks erkennen → Marker korrigieren → Exportieren",
+  "empty.instructions": "WAV ins Fenster ziehen oder öffnen → Schnittpunkte erkennen → Marker korrigieren → Exportieren",
   "empty.title": "Eine Aufnahme. Präzise Schnitte.",
   "empty.waveform": "WAV öffnen, um Schnittpunkte zu bearbeiten\nStrg+O",
-
   "error.audio_dropout": "Audioausgabe konnte zeitweise nicht folgen (Aussetzer).",
   "error.detector_registered": "Algorithmus bereits registriert: {id}",
   "error.duplicate_markers": "Doppelte Marker sind nicht erlaubt.",
@@ -48,39 +41,30 @@
   "error.wav_empty": "Die WAV-Datei enthält keine Samples.",
   "error.wav_format": "Bitte eine unkomprimierte PCM- oder Float-WAV-Datei öffnen.",
   "error.wav_samples": "Die WAV-Datei enthält ungültige Samplewerte (NaN/Inf).",
-
   "export.complete": "Exportierte WAV-Dateien: {count}.\n\n{directory}",
   "export.complete_title": "Export abgeschlossen",
   "export.partial": "\n\nBereits exportiert:\n{paths}",
-
   "help.shortcuts": "Doppelklick: Marker setzen/entfernen  ·  Ziehen: verschieben  ·  Strg+Mausrad: Zoom  ·  Leertaste: Play/Pause",
-
   "legend.markers": "<font color='#ffbd69'>● Automatisch</font>   <font color='#c3a3ff'>● Manuell</font>",
-
   "marker.automatic": "Automatisch",
   "marker.manual": "Manuell",
   "marker.tooltip": "{kind} · {time} · Sample {sample}",
-
   "menu.edit": "Bearbeiten",
   "menu.file": "Datei",
-
   "parameter.distance": "Peak-Mindestabstand",
   "parameter.lead": "Mindestvorlauf",
   "parameter.level": "Zielpegel relativ zum Peak",
   "parameter.lookback": "Max. Rückwärtssuche",
   "parameter.smoothing": "Hüllkurven-Glättung",
   "parameter.threshold": "Peak-Schwelle",
-
   "playback.pause": "Pause",
   "playback.play": "Abspielen",
   "playback.stop": "Stop",
   "playback.toggle": "Abspielen / Pause",
-
   "selection.all": "Gesamte Aufnahme",
   "selection.counts": "Marker: {markers}  ·  Segmente: {segments}",
   "selection.empty": "Keine Aufnahme geladen",
   "selection.segment": "Segment {number}  ·  {start} – {end}",
-
   "status.analysis_complete": "Analyse abgeschlossen. Schnittvorschläge: {count}.",
   "status.detecting": "Schnittpunkte werden erkannt …",
   "status.exported": "Segmente exportiert: {count}. Ziel: {directory}",
@@ -90,12 +74,21 @@
   "status.markers_changed": "Marker wurden während der Analyse geändert. Bitte erneut analysieren.",
   "status.ready": "Bereit",
   "status.wait_to_close": "Bitte den laufenden Vorgang abwarten und anschließend erneut schließen.",
-
   "unit.dbfs": " dBFS",
   "unit.ms": " ms",
   "unit.percent": " %",
-
   "zoom.fit": "Alles anzeigen",
   "zoom.in": "Zoom +",
-  "zoom.out": "Zoom -"
+  "zoom.out": "Zoom -",
+  "detector.envelope_threshold.name": "Envelope + Threshold",
+  "detector.envelope_hysteresis.name": "Envelope + Hysterese",
+  "detector.envelope_attack.name": "Envelope / Attack Detection",
+  "parameter.envelope_threshold": "Hüllkurven-Schwelle",
+  "parameter.threshold_on": "Startschwelle",
+  "parameter.threshold_off": "Rücksetzschwelle",
+  "parameter.rise": "Schwelle der Amplitudenzunahme",
+  "parameter.comparison": "Vergleichszeit für Anstieg",
+  "parameter.onset_distance": "Mindestabstand der Klanganfänge",
+  "parameter.onset_lead": "Vorlauf vor Klanganfang",
+  "error.hysteresis_thresholds": "Die Rücksetzschwelle muss unter der Startschwelle liegen."
 }

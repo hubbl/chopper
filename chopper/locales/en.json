@@ -4,32 +4,25 @@
   "action.quit": "Quit",
   "action.redo": "Redo",
   "action.undo": "Undo",
-
   "app.brand": "CHOPPER",
   "app.file_title": "{filename} — Chopper",
   "app.name": "Chopper",
   "app.title": "Chopper — WAV Splitter",
-
   "audio.metadata": "{duration}  ·  {samplerate:,} Hz  ·  Channels: {channels}  ·  {subtype}",
-
   "command.add_marker": "Add marker",
   "command.detect": "Automatic detection",
   "command.move_marker": "Move marker",
   "command.remove_marker": "Remove marker",
-
   "detector.analyze": "Analyze again",
   "detector.hint": "Manual markers are preserved.\nEvery analysis can be undone.",
   "detector.peaks.name": "Simple Peak Cut",
   "detector.title": "Detect cut points",
-
   "dialog.export": "Choose destination folder for WAV segments",
   "dialog.open": "Open WAV",
   "dialog.wav_filter": "WAV files (*.wav *.wave);;All files (*)",
-
-  "empty.instructions": "Drop or open a WAV → Detect peaks → Adjust markers → Export",
+  "empty.instructions": "Drop or open a WAV → detect cut points → adjust markers → export",
   "empty.title": "One recording. Precise cuts.",
   "empty.waveform": "Open a WAV to edit cut points\nCtrl+O",
-
   "error.audio_dropout": "Audio output temporarily fell behind (dropout).",
   "error.detector_registered": "Algorithm already registered: {id}",
   "error.duplicate_markers": "Duplicate markers are not allowed.",
@@ -48,39 +41,30 @@
   "error.wav_empty": "The WAV file contains no samples.",
   "error.wav_format": "Please open an uncompressed PCM or floating-point WAV file.",
   "error.wav_samples": "The WAV file contains invalid sample values (NaN/Inf).",
-
   "export.complete": "WAV files exported: {count}.\n\n{directory}",
   "export.complete_title": "Export complete",
   "export.partial": "\n\nAlready exported:\n{paths}",
-
   "help.shortcuts": "Double-click: add/remove marker  ·  Drag: move marker  ·  Ctrl+wheel: zoom  ·  Space: play/pause",
-
   "legend.markers": "<font color='#ffbd69'>● Automatic</font>   <font color='#c3a3ff'>● Manual</font>",
-
   "marker.automatic": "Automatic",
   "marker.manual": "Manual",
   "marker.tooltip": "{kind} · {time} · Sample {sample}",
-
   "menu.edit": "Edit",
   "menu.file": "File",
-
   "parameter.distance": "Minimum peak distance",
   "parameter.lead": "Minimum lead time",
   "parameter.level": "Target level relative to peak",
   "parameter.lookback": "Maximum lookback",
   "parameter.smoothing": "Envelope smoothing",
   "parameter.threshold": "Peak threshold",
-
   "playback.pause": "Pause",
   "playback.play": "Play",
   "playback.stop": "Stop",
   "playback.toggle": "Play / Pause",
-
   "selection.all": "Entire recording",
   "selection.counts": "Markers: {markers}  ·  Segments: {segments}",
   "selection.empty": "No recording loaded",
   "selection.segment": "Segment {number}  ·  {start} – {end}",
-
   "status.analysis_complete": "Analysis complete. Suggested cuts: {count}.",
   "status.detecting": "Detecting cut points …",
   "status.exported": "Segments exported: {count}. Destination: {directory}",
@@ -90,12 +74,21 @@
   "status.markers_changed": "Markers changed during analysis. Please analyze again.",
   "status.ready": "Ready",
   "status.wait_to_close": "Please wait for the current operation to finish, then close again.",
-
   "unit.dbfs": " dBFS",
   "unit.ms": " ms",
   "unit.percent": " %",
-
   "zoom.fit": "reset Zoom",
   "zoom.in": "Zoom +",
-  "zoom.out": "Zoom -"
+  "zoom.out": "Zoom -",
+  "detector.envelope_threshold.name": "Envelope + Threshold",
+  "detector.envelope_hysteresis.name": "Envelope + Hysteresis",
+  "detector.envelope_attack.name": "Envelope / Attack Detection",
+  "parameter.envelope_threshold": "Envelope threshold",
+  "parameter.threshold_on": "Start threshold",
+  "parameter.threshold_off": "Reset threshold",
+  "parameter.rise": "Amplitude rise threshold",
+  "parameter.comparison": "Rise comparison time",
+  "parameter.onset_distance": "Minimum onset distance",
+  "parameter.onset_lead": "Pre-roll before onset",
+  "error.hysteresis_thresholds": "The reset threshold must be below the start threshold."
 }

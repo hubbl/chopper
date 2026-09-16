@@ -33,7 +33,7 @@ from PySide6.QtWidgets import (
 )
 
 from .audio import AudioData, export_segments, load_wav
-from .detectors import REGISTRY, DetectorSpec, SimplePeakCutDetector
+from .detectors import DEFAULT_DETECTOR_ID, REGISTRY, DetectorSpec, SimplePeakCutDetector
 from .document import AudioDocument, Marker, MarkerCommand, moved_markers
 from .i18n import tr
 from .player import AudioPlayer, PlayerState
@@ -362,6 +362,8 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(850, 560)
         self.setAcceptDrops(True)
         self.parameter_widgets: dict[str, QDoubleSpinBox] = {}
+        self._parameter_values: dict[str, dict[str, float]] = {}
+        self._parameter_detector_id: str | None = None
         self.controller = ApplicationController(self)
         self._build_ui()
         self._build_actions()
@@ -455,6 +457,7 @@ class MainWindow(QMainWindow):
         self.algorithm = QComboBox()
         for spec in REGISTRY.values():
             self.algorithm.addItem(tr(spec.name), spec.id)
+        self.algorithm.setCurrentIndex(self.algorithm.findData(DEFAULT_DETECTOR_ID))
         detector_layout.addWidget(self.algorithm)
         self.parameter_form = QFormLayout()
         self.parameter_form.setVerticalSpacing(6)
@@ -538,17 +541,23 @@ class MainWindow(QMainWindow):
         """)
 
     def build_parameters(self) -> None:
+        if self._parameter_detector_id is not None:
+            self._parameter_values[self._parameter_detector_id] = {
+                key: widget.value() for key, widget in self.parameter_widgets.items()
+            }
         while self.parameter_form.rowCount():
             self.parameter_form.removeRow(0)
         self.parameter_widgets = {}
         spec = REGISTRY[self.algorithm.currentData()]
+        self._parameter_detector_id = spec.id
+        settings = self._parameter_values.get(spec.id, spec.defaults())
         for parameter in spec.parameters:
             spin = QDoubleSpinBox()
             spin.setRange(parameter.minimum, parameter.maximum)
             spin.setDecimals(1)
             spin.setSingleStep(parameter.step)
             spin.setSuffix(tr(parameter.suffix) if parameter.suffix else "")
-            spin.setValue(parameter.default)
+            spin.setValue(settings[parameter.key])
             spin.setKeyboardTracking(False)
             self.parameter_widgets[parameter.key] = spin
             self.parameter_form.addRow(tr(parameter.label), spin)

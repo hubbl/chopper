@@ -7,6 +7,7 @@ from importlib.resources import files
 
 DEFAULT_LANGUAGE = "en"
 
+
 # load_catalog will often be called in tr
 @lru_cache
 def load_catalog(language: str) -> dict[str, str]:

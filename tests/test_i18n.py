@@ -29,7 +29,7 @@ def test_catalogs_have_matching_keys_and_placeholders():
 
 def test_all_static_translation_keys_exist():
     catalog = i18n.load_catalog("en")
-    for path in Path(i18n.__file__).parent.glob("*.py"):
+    for path in Path(i18n.__file__).parent.rglob("*.py"):
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if (
@@ -66,7 +66,7 @@ def test_translation_and_english_fallback(monkeypatch):
 
 @pytest.mark.parametrize(
     ("language", "open_text", "parameter_text"),
-    [("en", "Open WAV …", "Peak threshold"), ("de", "WAV öffnen …", "Peak-Schwelle")],
+    [("en", "Open WAV …", "Start threshold"), ("de", "WAV öffnen …", "Startschwelle")],
 )
 def test_window_uses_selected_language(app, monkeypatch, language, open_text, parameter_text):
     monkeypatch.setattr(i18n, "LANGUAGE", language)
@@ -74,7 +74,7 @@ def test_window_uses_selected_language(app, monkeypatch, language, open_text, pa
     try:
         assert window.open_button.text() == open_text
         assert (
-            window.parameter_form.labelForField(window.parameter_widgets["threshold_db"]).text()
+            window.parameter_form.labelForField(window.parameter_widgets["threshold_on_db"]).text()
             == parameter_text
         )
     finally:
