@@ -5,7 +5,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, TypeVar
 
-from PySide6.QtCore import QMimeData, QObject, QRunnable, Qt, QThreadPool, QTimer, Signal, Slot
+from PySide6.QtCore import (
+    QMimeData,
+    QObject,
+    QRunnable,
+    QSignalBlocker,
+    Qt,
+    QThreadPool,
+    QTimer,
+    Signal,
+    Slot,
+)
 from PySide6.QtGui import (
     QAction,
     QCloseEvent,
@@ -15,6 +25,8 @@ from PySide6.QtGui import (
     QUndoStack,
 )
 from PySide6.QtWidgets import (
+    QAbstractSpinBox,
+    QCheckBox,
     QComboBox,
     QDoubleSpinBox,
     QFileDialog,
@@ -93,6 +105,8 @@ class ApplicationController(QObject):
         self.jobs: dict[int, Job] = {}
         self._next_job = 0
         self._generation = 0
+        self._analysis_request = 0
+        self._pending_analysis: bool | None = None
         self._drag_before: tuple[Marker, ...] | None = None
         self.timer = QTimer(self)
         self.timer.setInterval(33)
@@ -124,6 +138,10 @@ class ApplicationController(QObject):
         except Exception as exc:
             self.window.show_error(str(exc))
         finally:
+            if job.kind == "detect" and self._pending_analysis is not None:
+                guess_threshold = self._pending_analysis
+                self._pending_analysis = None
+                self.analyze(guess_threshold=guess_threshold)
             self.window.update_actions()
 
     def open_path(self, path: str | Path) -> None:
@@ -166,6 +184,11 @@ class ApplicationController(QObject):
     def analyze(self, *, guess_threshold: bool = False) -> None:
         if self.document is None:
             return
+        self._analysis_request += 1
+        request = self._analysis_request
+        if any(job.kind == "detect" for job in self.jobs.values()):
+            self._pending_analysis = guess_threshold
+            return
         self.player.stop()
         document = self.document
         revision = document.revision
@@ -175,23 +198,26 @@ class ApplicationController(QObject):
         self.window.statusBar().showMessage(tr("status.detecting"))
 
         def detected(result: tuple[list[int], float | None]) -> None:
-            if document is not self.document or generation != self._generation:
+            if (
+                document is not self.document
+                or generation != self._generation
+                or request != self._analysis_request
+            ):
                 return
             positions, threshold = result
             self.show_guessed_threshold(spec.id, parameters, threshold)
-            if revision != document.revision:
-                self.window.statusBar().showMessage(tr("status.markers_changed"))
-                return
-            after = document.automatic_proposal(positions)
-            if tuple(sorted(after, key=lambda m: m.sample)) != document.markers:
-                self.undo.push(MarkerCommand(document, after, tr("command.detect")))
-            self.window.statusBar().showMessage(
-                tr("status.analysis_complete", count=len(positions))
-            )
+            self.apply_detection(document, revision, positions)
 
         def failed(message: str) -> None:
-            if document is self.document and generation == self._generation:
-                self.window.show_error(message)
+            if (
+                document is self.document
+                and generation == self._generation
+                and request == self._analysis_request
+            ):
+                if self.window.auto_update.isChecked():
+                    self.window.statusBar().showMessage(message)
+                else:
+                    self.window.show_error(message)
 
         self.submit(
             "detect",
@@ -200,13 +226,23 @@ class ApplicationController(QObject):
             failed,
         )
 
+    def apply_detection(self, document: AudioDocument, revision: int, positions: list[int]) -> None:
+        if revision != document.revision:
+            self.window.statusBar().showMessage(tr("status.markers_changed"))
+            return
+        after = document.automatic_proposal(positions)
+        if tuple(sorted(after, key=lambda m: m.sample)) != document.markers:
+            self.undo.push(MarkerCommand(document, after, tr("command.detect")))
+        self.window.statusBar().showMessage(tr("status.analysis_complete", count=len(positions)))
+
     def show_guessed_threshold(
         self, spec_id: str, parameters: dict[str, float], threshold: float | None
     ) -> None:
         if threshold is not None and self.window.algorithm.currentData() == spec_id:
             widget = self.window.parameter_widgets["threshold_db"]
             if widget.value() == parameters["threshold_db"]:
-                widget.setValue(threshold)
+                with QSignalBlocker(widget):
+                    widget.setValue(threshold)
 
     def add_marker(self, sample: int) -> None:
         if self.document and 0 < sample < self.document.audio.frames:
@@ -287,6 +323,10 @@ class ApplicationController(QObject):
             )
         self.player.seek(self.player.start)
         self.tick()
+
+    def select_and_play_segment(self, sample: int) -> None:
+        self.select_segment(sample)
+        self.toggle_play()
 
     def select_all(self) -> None:
         self.window.waveform.anchor = None
@@ -433,7 +473,7 @@ class MainWindow(QMainWindow):
         self.waveform.move_started.connect(self.controller.begin_move)
         self.waveform.move_preview.connect(self.controller.preview_move)
         self.waveform.move_finished.connect(self.controller.finish_move)
-        self.waveform.segment_selected.connect(self.controller.select_segment)
+        self.waveform.segment_selected.connect(self.controller.select_and_play_segment)
         wave_column.addWidget(self.waveform, 1)
         legend = QHBoxLayout()
         legend.addWidget(QLabel(tr("legend.markers")))
@@ -463,10 +503,14 @@ class MainWindow(QMainWindow):
         self.parameter_form.setVerticalSpacing(6)
         self.parameter_form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapAllRows)
         detector_layout.addLayout(self.parameter_form)
+        self.auto_update = QCheckBox(tr("detector.auto_update"))
+        self.auto_update.setChecked(True)
+        self.auto_update.toggled.connect(self.automatic_update_changed)
         self.algorithm.currentIndexChanged.connect(self.build_parameters)
         self.build_parameters()
         self.analyze_button = QPushButton(tr("detector.analyze"))
         self.analyze_button.clicked.connect(self.controller.analyze)
+        detector_layout.addWidget(self.auto_update)
         detector_layout.addWidget(self.analyze_button)
         hint = QLabel(tr("detector.hint"))
         hint.setWordWrap(True)
@@ -518,7 +562,8 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(tr("status.ready"))
 
     def _apply_style(self) -> None:
-        self.setStyleSheet("""
+        self.setStyleSheet(
+            """
             QMainWindow, QWidget { background: #132232; color: #e1eaf2; font-family: 'Segoe UI'; font-size: 12px; }
             QLabel#brand { color: #53d7bc; font-size: 21px; font-weight: 800; letter-spacing: 3px; }
             QLabel#fileTitle { font-size: 20px; font-weight: 600; }
@@ -532,13 +577,21 @@ class MainWindow(QMainWindow):
             QGroupBox { border: 1px solid #345068; border-radius: 6px; margin-top: 9px; padding: 15px 10px 8px; }
             QGroupBox::title { subcontrol-origin: margin; left: 12px; padding: 0 5px; }
             QDoubleSpinBox, QComboBox { background: #0f1d2b; border: 1px solid #3c5870; border-radius: 3px; padding: 5px; min-height: 18px; }
+            QDoubleSpinBox { padding-right: 24px; }
+            QDoubleSpinBox::up-button, QDoubleSpinBox::down-button { subcontrol-origin: border; width: 22px; background: #243c51; border-left: 1px solid #3c5870; }
+            QDoubleSpinBox::up-button { subcontrol-position: top right; }
+            QDoubleSpinBox::down-button { subcontrol-position: bottom right; }
+            QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover { background: #3d6481; }
+            QDoubleSpinBox::up-arrow { image: url("ASSET_PATH/spin-up.svg"); width: 10px; height: 6px; }
+            QDoubleSpinBox::down-arrow { image: url("ASSET_PATH/spin-down.svg"); width: 10px; height: 6px; }
             QStatusBar { color: #98afc2; }
             QProgressBar { border: 0; background: #20374a; }
             QProgressBar::chunk { background: #53d7bc; }
             QMenu { background: #20374a; }
             QMenu::item:selected { background: #36536b; }
             QToolTip { background: #e1eaf2; color: #132232; border: 1px solid #98afc2; }
-        """)
+        """.replace("ASSET_PATH", (Path(__file__).parent / "assets").as_posix())
+        )
 
     def build_parameters(self) -> None:
         if self._parameter_detector_id is not None:
@@ -558,9 +611,26 @@ class MainWindow(QMainWindow):
             spin.setSingleStep(parameter.step)
             spin.setSuffix(tr(parameter.suffix) if parameter.suffix else "")
             spin.setValue(settings[parameter.key])
-            spin.setKeyboardTracking(False)
+            spin.setButtonSymbols(QAbstractSpinBox.ButtonSymbols.UpDownArrows)
+            spin.setKeyboardTracking(True)
+            spin.valueChanged.connect(self.request_automatic_analysis)
             self.parameter_widgets[parameter.key] = spin
             self.parameter_form.addRow(tr(parameter.label), spin)
+        self.request_automatic_analysis()
+
+    def request_automatic_analysis(self) -> None:
+        if self.auto_update.isChecked() and not any(
+            job.kind == "load" for job in self.controller.jobs.values()
+        ):
+            self.controller.analyze()
+
+    def automatic_update_changed(self, checked: bool) -> None:
+        if checked:
+            self.request_automatic_analysis()
+        else:
+            self.controller._pending_analysis = None
+            self.controller._analysis_request += 1
+        self.update_actions()
 
     def _action(
         self, text: str, shortcut: str, callback: Callable[[], object], menu: QMenu | None = None
@@ -625,7 +695,10 @@ class MainWindow(QMainWindow):
         ):
             widget.setEnabled(ready and not dragging)
         self.analyze_button.setEnabled(
-            ready and not dragging and not kinds.intersection({"load", "detect"})
+            ready
+            and not self.auto_update.isChecked()
+            and not dragging
+            and not kinds.intersection({"load", "detect"})
         )
         for widget in (self.export_button, self.export_action):
             widget.setEnabled(ready and not dragging and not kinds.intersection({"load", "export"}))

@@ -22,7 +22,9 @@ class EnvelopeHysteresisDetector:
     ) -> list[int]:
         settings = validated_parameters("envelope_hysteresis", parameters)
         if settings["threshold_off_db"] >= settings["threshold_on_db"]:
-            raise ValueError(tr("error.hysteresis_thresholds"))
+            # raise ValueError(tr("error.hysteresis_thresholds"))
+            # raising stops the updates from working. we just use the maximum value possible
+            settings["threshold_off_db"] = settings["threshold_on_db"]
         env = prepare_envelope(samples, samplerate, settings)
         threshold_on = 10 ** (settings["threshold_on_db"] / 20)
         threshold_off = 10 ** (settings["threshold_off_db"] / 20)

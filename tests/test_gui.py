@@ -359,3 +359,111 @@ def test_new_analysis_preserves_manual_markers_and_supports_undo(
     window.controller.undo.redo()
     assert doc.markers == after
     window.close()
+
+
+def test_parameter_buttons_match_wheel_steps(app):
+    from PySide6.QtWidgets import QStyle, QStyleOptionSpinBox
+
+    from chopper.detectors import REGISTRY
+
+    window = MainWindow()
+    window.show()
+    for spec in REGISTRY.values():
+        window.algorithm.setCurrentIndex(window.algorithm.findData(spec.id))
+        app.processEvents()
+        for parameter in spec.parameters:
+            spin = window.parameter_widgets[parameter.key]
+            spin.setValue(parameter.minimum)
+            option = QStyleOptionSpinBox()
+            spin.initStyleOption(option)
+            up = spin.style().subControlRect(
+                QStyle.ComplexControl.CC_SpinBox, option, QStyle.SubControl.SC_SpinBoxUp, spin
+            )
+            down = spin.style().subControlRect(
+                QStyle.ComplexControl.CC_SpinBox, option, QStyle.SubControl.SC_SpinBoxDown, spin
+            )
+            QTest.mouseClick(spin, Qt.MouseButton.LeftButton, pos=up.center())
+            stepped = spin.value()
+            assert stepped == pytest.approx(parameter.minimum + parameter.step)
+            QTest.mouseClick(spin, Qt.MouseButton.LeftButton, pos=down.center())
+            assert spin.value() == parameter.minimum
+            event = QWheelEvent(
+                QPointF(spin.rect().center()),
+                QPointF(spin.mapToGlobal(spin.rect().center())),
+                QPoint(),
+                QPoint(0, 120),
+                Qt.MouseButton.NoButton,
+                Qt.KeyboardModifier.NoModifier,
+                Qt.ScrollPhase.NoScrollPhase,
+                False,
+            )
+            app.sendEvent(spin, event)
+            assert spin.value() == stepped
+    window.close()
+
+
+def test_automatic_updates_and_manual_mode(app, audio, monkeypatch):
+    window = MainWindow()
+    controller = window.controller
+    controller.document = AudioDocument(audio)
+    controller.player.set_audio(audio)
+    window.waveform.set_document(controller.document)
+    calls = []
+
+    def detect(spec, audio, parameters, guess_threshold):
+        calls.append((spec.id, parameters["lead_ms"]))
+        return [100 + round(parameters["lead_ms"])], None
+
+    monkeypatch.setattr("chopper.app.detect_audio", detect)
+    window.update_actions()
+    assert window.auto_update.isChecked()
+    assert not window.analyze_button.isEnabled()
+    window.parameter_widgets["lead_ms"].setValue(23)
+    wait_jobs(app, window)
+    assert [m.sample for m in controller.document.markers] == [123]
+    window.auto_update.setChecked(False)
+    assert window.analyze_button.isEnabled()
+    window.parameter_widgets["lead_ms"].setValue(31)
+    assert len(calls) == 1
+    window.analyze_button.click()
+    wait_jobs(app, window)
+    assert [m.sample for m in controller.document.markers] == [131]
+    window.parameter_widgets["lead_ms"].setValue(41)
+    window.auto_update.setChecked(True)
+    wait_jobs(app, window)
+    assert [m.sample for m in controller.document.markers] == [141]
+    window.algorithm.setCurrentIndex(window.algorithm.findData("peaks"))
+    wait_jobs(app, window)
+    assert calls[-1][0] == "peaks"
+    window.close()
+
+
+def test_rapid_parameter_changes_only_apply_latest_result(app, audio, monkeypatch):
+    from threading import Event
+
+    window = MainWindow()
+    controller = window.controller
+    controller.document = AudioDocument(audio)
+    controller.player.set_audio(audio)
+    window.waveform.set_document(controller.document)
+    release = Event()
+    calls = []
+    applied = []
+    controller.document.markers_changed.connect(
+        lambda: applied.append([m.sample for m in controller.document.markers])
+    )
+
+    def detect(spec, audio, parameters, guess_threshold):
+        calls.append(parameters["lead_ms"])
+        assert release.wait(5)
+        return [100 + round(parameters["lead_ms"])], None
+
+    monkeypatch.setattr("chopper.app.detect_audio", detect)
+    window.parameter_widgets["lead_ms"].setValue(21)
+    window.parameter_widgets["lead_ms"].setValue(31)
+    window.parameter_widgets["lead_ms"].setValue(41)
+    release.set()
+    wait_jobs(app, window)
+    assert calls == [21, 41]
+    assert applied == [[141]]
+    window.close()

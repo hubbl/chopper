@@ -171,7 +171,6 @@ class WaveformView(QGraphicsView):
     MARKER_LINE_WIDTH_PX = 1.5
     SELECTED_MARKER_LINE_WIDTH_PX = 3
     PLAYHEAD_LINE_WIDTH_PX = 1.5
-    ZOOM_FACTOR_PER_NOTCH = 1.25
 
     add_requested = Signal(int)
     remove_requested = Signal(str)
@@ -321,9 +320,11 @@ class WaveformView(QGraphicsView):
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if not self.document or event.button() != Qt.MouseButton.LeftButton:
             return super().mousePressEvent(event)
+
         self.setFocus()
         point = event.position().toPoint()
         marker = self.marker_at(point)
+
         if marker:
             self.selected_marker = marker.id
             self._drag_id, self._dragging, self._press_x = marker.id, False, point.x()
@@ -331,6 +332,7 @@ class WaveformView(QGraphicsView):
             self.selected_marker = None
             self.anchor = self.sample_at(point)
             self.segment_selected.emit(self.anchor)
+
         self.viewport().update()
         event.accept()
 

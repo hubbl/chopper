@@ -13,6 +13,7 @@
   "command.detect": "Automatische Erkennung",
   "command.move_marker": "Marker verschieben",
   "command.remove_marker": "Marker entfernen",
+  "detector.auto_update": "automatisch aktualisieren",
   "detector.analyze": "Neu analysieren",
   "detector.hint": "Manuelle Marker bleiben erhalten.\nJede Analyse lässt sich rückgängig machen.",
   "detector.peaks.name": "Simple Peak Cut",

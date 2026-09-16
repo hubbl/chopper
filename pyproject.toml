@@ -19,7 +19,7 @@ chopper = "chopper.__main__:main"
 include = ["chopper*"]
 
 [tool.setuptools.package-data]
-chopper = ["assets/*.ico", "locales/*.json"]
+chopper = ["assets/*.ico", "assets/*.svg", "locales/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
