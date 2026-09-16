@@ -1,7 +1,5 @@
 """Qt-free algorithm registry. Register another DetectorSpec to extend the UI."""
 
-from __future__ import annotations
-
 from bisect import bisect_left, insort
 from collections.abc import Mapping
 from dataclasses import dataclass

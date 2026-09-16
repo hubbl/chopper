@@ -1,7 +1,5 @@
 """JSON message catalogs, selected once at startup (English by default)."""
 
-from __future__ import annotations
-
 import json
 import os
 from functools import lru_cache
@@ -9,7 +7,7 @@ from importlib.resources import files
 
 DEFAULT_LANGUAGE = "en"
 
-
+# load_catalog will often be called in tr
 @lru_cache
 def load_catalog(language: str) -> dict[str, str]:
     """Load a packaged catalog. Only simple language codes are accepted."""
@@ -28,7 +26,7 @@ def resolve_language(language: str) -> str:
     code = language.strip().lower().replace("_", "-").split("-")[0]
     try:
         load_catalog(code)
-    except (FileNotFoundError, ValueError):
+    except FileNotFoundError, ValueError:
         return DEFAULT_LANGUAGE
     return code
 

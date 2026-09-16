@@ -1,7 +1,5 @@
 """Immutable source audio and lossless sample-range export (no Qt dependency)."""
 
-from __future__ import annotations
-
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path

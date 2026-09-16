@@ -23,8 +23,8 @@ Abhängigkeiten bei einer neuen Einrichtung:
 .venv\Scripts\python.exe -m pip install -e ".[dev]"
 ```
 
-Getestete direkte Abhängigkeiten stehen in `requirements.txt`; Python 3.14 wird
-in dieser Umgebung verwendet. Der Quellcode unterstützt Python ab 3.11.
+Python 3.14 oder neuer ist erforderlich. Getestete direkte Abhängigkeiten stehen
+in `requirements.txt`.
 
 ## Workflow
 

@@ -1,7 +1,5 @@
 """The document owns marker state; Qt commands own reversible snapshots."""
 
-from __future__ import annotations
-
 from bisect import bisect_right
 from collections.abc import Iterable
 from dataclasses import dataclass, field, replace

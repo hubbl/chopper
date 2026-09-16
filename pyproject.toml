@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "chopper-wav"
 version = "0.1.0"
 description = "Sample-accurate WAV splitter with modular peak detection"
-requires-python = ">=3.11"
+requires-python = ">=3.14"
 dependencies = ["PySide6>=6.8,<7", "numpy>=2.1,<3", "soundfile>=0.13,<1", "sounddevice>=0.5,<1"]
 
 [project.optional-dependencies]
@@ -29,7 +29,7 @@ addopts = "-p no:cacheprovider"
 
 [tool.ruff]
 # Keep lint suggestions and formatting compatible with the minimum Python version.
-target-version = "py311"
+target-version = "py314"
 # Preferred formatter width; this does not enable the E501 line-length lint rule.
 line-length = 100
 
@@ -42,7 +42,7 @@ select = [
     "E9",   # pycodestyle: runtime-related errors, e.g. using break outside a loop.
     "F",    # Pyflakes: unused imports/variables, undefined names, and other code errors.
     "I",    # isort: sort and group imports consistently.
-    "UP",   # pyupgrade: replace outdated syntax/APIs with Python 3.11-compatible forms.
+    "UP",   # pyupgrade: replace outdated syntax/APIs with Python 3.14-compatible forms.
     "ANN",  # flake8-annotations: require parameter/return types and reject explicit Any.
     "C901", # McCabe: flag functions exceeding max-complexity below.
 ]

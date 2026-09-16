@@ -1,7 +1,5 @@
 """Audio-range playback. The callback never accesses Qt or document markers."""
 
-from __future__ import annotations
-
 from collections.abc import Callable
 from enum import StrEnum
 from typing import Protocol

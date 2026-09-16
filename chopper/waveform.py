@@ -1,7 +1,5 @@
 """Graphics View waveform with sample coordinates and pixel-sized interactions."""
 
-from __future__ import annotations
-
 import math
 
 import numpy as np

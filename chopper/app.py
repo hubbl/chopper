@@ -1,7 +1,5 @@
 """Main window and orchestration; long-running operations use the Qt thread pool."""
 
-from __future__ import annotations
-
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
